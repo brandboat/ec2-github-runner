@@ -34,23 +34,37 @@ async function startEc2Instance(label, githubRegistrationToken) {
   const ec2 = new AWS.EC2();
 
   const userData = buildUserDataScript(githubRegistrationToken, label);
-
-  const params = {
-    ImageId: config.input.ec2ImageId,
-    InstanceType: config.input.ec2InstanceType,
-    MinCount: 1,
-    MaxCount: 1,
-    UserData: Buffer.from(userData.join('\n')).toString('base64'),
-    SubnetId: config.input.subnetId,
-    SecurityGroupIds: [config.input.securityGroupId],
-    IamInstanceProfile: { Name: config.input.iamRoleName },
-    TagSpecifications: config.tagSpecifications,
-  };
+  const serializedUserData = Buffer.from(userData.join('\n')).toString('base64');
+  const params = config.input.spotInstance
+    ? {
+        InstanceCount: 1,
+        LaunchSpecification: {
+          ImageId: config.input.ec2ImageId,
+          InstanceType: config.input.ec2InstanceType,
+          UserData: serializedUserData,
+          SubnetId: config.input.subnetId,
+          SecurityGroupIds: [config.input.securityGroupId],
+          IamInstanceProfile: { Name: config.input.iamRoleName },
+        },
+        TagSpecifications: config.tagSpecifications,
+        SpotPrice: config.input.spotInstancePrice,
+      }
+    : {
+        ImageId: config.input.ec2ImageId,
+        InstanceType: config.input.ec2InstanceType,
+        MinCount: 1,
+        MaxCount: 1,
+        UserData: serializedUserData,
+        SubnetId: config.input.subnetId,
+        SecurityGroupIds: [config.input.securityGroupId],
+        IamInstanceProfile: { Name: config.input.iamRoleName },
+        TagSpecifications: config.tagSpecifications,
+      };
 
   try {
-    const result = await ec2.runInstances(params).promise();
-    const ec2InstanceId = result.Instances[0].InstanceId;
-    core.info(`AWS EC2 instance ${ec2InstanceId} is started`);
+    const result = config.input.spotInstance ? await ec2.requestSpotInstances(params).promise() : await ec2.runInstances(params).promise();
+    const ec2InstanceId = config.input.spotInstance ? result.SpotInstanceRequests[0].InstanceId : result.Instances[0].InstanceId;
+    core.info(`AWS EC2 ${config.input.spotInstance ? 'Spot' : ''} instance ${ec2InstanceId} is started`);
     return ec2InstanceId;
   } catch (error) {
     core.error('AWS EC2 instance starting error');
