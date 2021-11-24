@@ -15,6 +15,8 @@ class Config {
       iamRoleName: core.getInput('iam-role-name'),
       runnerHomeDir: core.getInput('runner-home-dir'),
       maxAttempts: core.getInput('max_attempts'),
+      spotInstance: core.getInput('spot_instance'),
+      spotInstancePrice: core.getInput('spot_instance_price'),
     };
 
     const tags = JSON.parse(core.getInput('aws-resource-tags'));

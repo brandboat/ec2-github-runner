@@ -69,6 +69,14 @@ inputs:
     description: Number of attempts. Default is 1
     required: false
     default: 3
+  spot_instance:
+    description: Use spot instance or not. Default to false.
+    required: false
+    default: false
+  spot_instance_price:
+    description: Price of your spot instance. Default to be a bit higher than avg of ap-northeast-1 t3.xlarge price in 2021/11
+    required: false
+    default: 0.07
 outputs:
   label:
     description: >-
