@@ -18,6 +18,7 @@ async function start() {
 
   try {
     await gh.waitForRunnerRegistered(label);
+    throw 'test';
   }
   catch (error) {
     await aws.terminateInstancesById(ec2InstanceId);
@@ -33,7 +34,8 @@ async function stop() {
 (async function () {
   try {
     const exec = () => (config.input.mode === 'start' ? start() : stop());
-    await backOff(exec, { numOfAttempts: config.input.maxAttempts, delayFirstAttempt: true, startingDelay: 1000 });
+    await exec();
+    // await backOff(exec, { numOfAttempts: config.input.maxAttempts, delayFirstAttempt: true, startingDelay: 1000 });
   } catch (error) {
     core.error(error);
     core.setFailed(error.message);
